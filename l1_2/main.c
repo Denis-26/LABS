@@ -23,7 +23,7 @@ int main(int argc, char **argv)
             char prefix[100] = "";
             char date[36];
             strftime(date, 36, "%b %d %H:%M ", localtime(&(buf.st_mtime)));
-            sprintf(prefix, "%s%s%s%s%s%s%s%s%s %ld %s %s %7ld %s %s\n",
+            sprintf(prefix, "%s%s%s%s%s%s%s%s%s %4ld %s %s %7ld %s %s\n",
                 (S_ISDIR(buf.st_mode)) ?  "d" : "-",
                 (buf.st_mode & S_IRUSR) ? "r" : "-",
                 (buf.st_mode & S_IWUSR) ? "w" : "-",
