@@ -8,6 +8,10 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#define COLOR_END   "\x1b[0m"
+#define COLOR_BLUE  "\x1b[34m"
+#define COLOR_GREEN "\x1b[32m"
 
 int main(int argc, char **argv)
 {
@@ -22,9 +26,12 @@ int main(int argc, char **argv)
             stat(ent->d_name, &buf);
             char prefix[100] = "";
             char date[36];
+            char f_name[100] = "";
+            bool is_dir = S_ISDIR(buf.st_mode) ? 1 : 0;
+            bool executable = buf.st_mode & S_IXOTH ? 1 : 0;
             strftime(date, 36, "%b %d %H:%M ", localtime(&(buf.st_mtime)));
-            sprintf(prefix, "%s%s%s%s%s%s%s%s%s %4ld %s %s %7ld %s %s\n",
-                (S_ISDIR(buf.st_mode)) ?  "d" : "-",
+            sprintf(prefix, "%s%s%s%s%s%s%s%s%s %4ld %s %s %7ld %s ",
+                is_dir ?  "d" : "-",
                 (buf.st_mode & S_IRUSR) ? "r" : "-",
                 (buf.st_mode & S_IWUSR) ? "w" : "-",
                 (buf.st_mode & S_IXUSR) ? "x" : "-",
@@ -32,15 +39,16 @@ int main(int argc, char **argv)
                 (buf.st_mode & S_IWGRP) ? "w" : "-",
                 (buf.st_mode & S_IROTH) ? "r" : "-",
                 (buf.st_mode & S_IWOTH) ? "w" : "-",
-                (buf.st_mode & S_IXOTH) ? "x" : "-",
+                executable ? "x" : "-",
                 buf.st_nlink,
                 (uid < 0 || uid != euid) ? "root " : p->pw_name,
                 (uid < 0 || uid != euid) ? "root " : cur_gr->gr_name,
                 buf.st_size,
-                date,
-                ent->d_name
+                date
             );
             printf("%s", prefix);
+            sprintf(f_name, "%s %s %s\n", is_dir ? COLOR_BLUE : (executable ? COLOR_GREEN : COLOR_END), ent->d_name, COLOR_END);
+            printf("%s", f_name);
         }
         closedir (dir);
     } else {
