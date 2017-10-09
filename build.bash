@@ -1,7 +1,3 @@
 #!/bin/sh
-cd lab_1
-make
-
-cd ..
-cd task_1
+cd l1_2
 make
