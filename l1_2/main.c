@@ -30,7 +30,7 @@ int main(int argc, char **argv)
             bool is_dir = S_ISDIR(buf.st_mode) ? 1 : 0;
             bool executable = buf.st_mode & S_IXOTH ? 1 : 0;
             strftime(date, 36, "%b %d %H:%M ", localtime(&(buf.st_mtime)));
-            sprintf(prefix, "%s%s%s%s%s%s%s%s%s %4ld %s %s %7ld %s ",
+            sprintf(prefix, "%s%s%s%s%s%s%s%s%s %4hu %s %s %7lld %s ",
                 is_dir ?  "d" : "-",
                 (buf.st_mode & S_IRUSR) ? "r" : "-",
                 (buf.st_mode & S_IWUSR) ? "w" : "-",
