@@ -2,17 +2,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <fcntl.h>
+#include "help.h"
+
+
 
 int my_write(char*);
 int my_read(char *);
-char *read_user_file(char*);
-int empty_file(FILE *);
-int exist(FILE*, char*);
-
-struct MyType{
-    char name[128];
-    char data[1024];
-};
 
 int main(int argc, char *argv[])
 {
@@ -26,86 +22,59 @@ int main(int argc, char *argv[])
 }
 
 int my_write(char *filename){
-    FILE *file_sys, *user_file;
-    file_sys = fopen("file.lol", "r+");
+    int file_sys;
+    struct MyType file_data;
+    struct MyHeader header;
+    header.det = det;
+    file_sys = open("file.lol", O_RDWR);
     char *user_data = read_user_file(filename);
 
-    struct MyType current;
-    strncpy(current.name, filename, 128);
-    strncpy(current.data, user_data, 1024);
 
-    if (!file_sys){
+    strncpy(file_data.name, filename, 128);
+    strncpy(file_data.data, user_data, 1024);
+
+    if (file_sys == -1){
         printf("%s\n", "Error in fileopen");
         return 1;
     }
     int empty = empty_file(file_sys);
     if (!empty){
         if (!exist(file_sys, filename)){
-            fwrite(&current, sizeof(struct MyType), 1, file_sys);
+            write(file_sys, &header, sizeof(struct MyHeader));
+            write(file_sys, &file_data, sizeof(struct MyType));
         } else {
             printf("%s\n", "exist!!!!");
         }
     } else {
-        fwrite(&current, sizeof(struct MyType), 1, file_sys);
+        int res = write(file_sys, &header, sizeof(struct MyHeader));
+        int res2 = write(file_sys, &file_data, sizeof(struct MyType));
     }
 
-    fclose(file_sys);
+    close(file_sys);
     return 0;
 }
 
 int my_read(char *filename){
-    FILE *file_sys;
-    file_sys = fopen("file.lol", "rb");
-    if (!file_sys){
+    int fd = open("file.lol", O_RDONLY);
+    if (fd == -1){
         printf("%s\n", "Error in fileopen");
         return 1;
     }
     struct MyType type;
-    while (fread(&type, sizeof(struct MyType), 1, file_sys) == 1){
-        if (!strcmp(filename, type.name)){
-            printf("%s\n", type.data);
+    struct MyHeader header;
+    for(int i = 1; ; ++i){
+        ssize_t r_bytes = read(fd, &header, sizeof(struct MyHeader));
+        lseek(fd, sizeof(struct MyHeader)*i, SEEK_SET);
+        r_bytes = read(fd, &type, sizeof(struct MyType));
+        if (r_bytes == 0){
+            return 0;
         }
-    }
-    fclose(file_sys);
-}
-
-
-char* read_user_file(char *filename){
-    FILE *f = fopen(filename, "rb");
-    if (!f){
-        printf("%s\n", "Error in fileopen");
-        return "";
-    }
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char *data_string = malloc(fsize + 1);
-    fread(data_string, fsize, 1, f);
-    data_string[fsize] = 0;
-    fclose(f);
-    return data_string;
-}
-
-int exist(FILE *fp, char *filename){
-    struct MyType record;
-    while (fread(&record, sizeof(struct MyType), 1, fp) == 1){
-        if (!strcmp(record.name, filename)){
-            return 1;
+        if (!strcmp(filename, type.name) && header.det == det){
+            printf("%s\n", type.name);
+            return 0;
         }
+        off_t s = lseek(fd, sizeof(struct MyType)*i, SEEK_SET);
     }
-    return 0;
-}
-
-int empty_file(FILE *fp){
-    if (NULL != fp) {
-        fseek (fp, 0, SEEK_END);
-        size_t size = ftell(fp);
-        if (size == 0) {
-            fseek(fp, 0, SEEK_SET);
-            return 1;
-        }
-    }
-    fseek(fp, 0, SEEK_SET);
+    close(fd);
     return 0;
 }
