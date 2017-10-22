@@ -1,80 +1,130 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <string.h>
-#include <fcntl.h>
+
 #include "help.h"
 
-
-
-int my_write(char*);
-int my_read(char *);
+int unic = 13123;
+const int user_max_filesize = 1024;
+const int user_max_filename = 128;
 
 int main(int argc, char *argv[])
 {
-    if (argc == 3){
-        if (!strcmp(argv[1], "r")){
-            my_read(argv[2]);
-        } else if (!strcmp (argv[1], "w")){
-            my_write(argv[2]);
-        }
-    }
-}
-
-int my_write(char *filename){
-    int file_sys;
-    struct MyType file_data;
-    struct MyHeader header;
-    header.det = det;
-    file_sys = open("file.lol", O_RDWR);
-    char *user_data = read_user_file(filename);
-
-
-    strncpy(file_data.name, filename, 128);
-    strncpy(file_data.data, user_data, 1024);
-
-    if (file_sys == -1){
-        printf("%s\n", "Error in fileopen");
-        return 1;
-    }
-    int empty = empty_file(file_sys);
-    if (!empty){
-        if (!exist(file_sys, filename)){
-            write(file_sys, &header, sizeof(struct MyHeader));
-            write(file_sys, &file_data, sizeof(struct MyType));
-        } else {
-            printf("%s\n", "exist!!!!");
-        }
-    } else {
-        int res = write(file_sys, &header, sizeof(struct MyHeader));
-        int res2 = write(file_sys, &file_data, sizeof(struct MyType));
-    }
-
-    close(file_sys);
-    return 0;
-}
-
-int my_read(char *filename){
-    int fd = open("file.lol", O_RDONLY);
+    int fd = open("file.lol", O_RDWR);
     if (fd == -1){
         printf("%s\n", "Error in fileopen");
+        close(fd);
         return 1;
     }
-    struct MyType type;
-    struct MyHeader header;
-    for(int i = 1; ; ++i){
-        ssize_t r_bytes = read(fd, &header, sizeof(struct MyHeader));
-        lseek(fd, sizeof(struct MyHeader)*i, SEEK_SET);
-        r_bytes = read(fd, &type, sizeof(struct MyType));
-        if (r_bytes == 0){
-            return 0;
+    if (argc >= 2){
+        if (!strcmp(argv[1], "-r")){
+            my_read(fd, argv[2]);
+        } else if (!strcmp (argv[1], "-w")){
+            my_write(fd, argv[2]);
+        } else if (!strcmp (argv[1], "-d")){
+            delete_file(fd, argv[2]);
+        } else if (!strcmp (argv[1], "-l")){
+            files(fd);
         }
-        if (!strcmp(filename, type.name) && header.det == det){
-            printf("%s\n", type.name);
-            return 0;
-        }
-        off_t s = lseek(fd, sizeof(struct MyType)*i, SEEK_SET);
     }
     close(fd);
     return 0;
+}
+
+int my_write(int fd, char *filename){
+    struct MyType file_data;
+    struct MyHeader header;
+    struct MyType temp_file_data;
+    struct MyHeader temp_header;
+    int magic_numb;
+    char *user_data = read_user_file(filename);
+
+    header.del = 0;
+    strncpy(header.name, filename, user_max_filename);
+    strncpy(file_data.data, user_data, user_max_filesize);
+
+
+    if (!empty_file(fd)){
+        if (format_err(fd, unic)){
+            printf("%s\n", "Format error");
+            close(fd);
+            return 1;
+        }
+        while(read(fd, &temp_header, sizeof(struct MyHeader))){
+            if (temp_header.del){
+                off_t offset = lseek( fd, 0, SEEK_CUR );
+                lseek(fd, offset-sizeof(struct MyHeader), SEEK_SET);
+                break;
+            } else if (!strcmp(temp_header.name, filename)){
+                printf("%s\n", "exist!!!!");
+                return 0;
+            }
+            read(fd, &temp_file_data, sizeof(struct MyType));
+        }
+    } else {
+        write(fd, &unic, sizeof(int));
+    }
+
+    write(fd, &header, sizeof(struct MyHeader));
+    write(fd, &file_data, sizeof(struct MyType));
+    return 0;
+}
+
+int my_read(int fd, char *filename){
+
+    int det;
+    struct MyType type;
+    struct MyHeader header;
+    if (format_err(fd, unic)){
+        printf("%s\n", "Format error");
+        close(fd);
+        return 1;
+    }
+
+    while(read(fd, &header, sizeof(struct MyHeader))){
+        read(fd, &type, sizeof(struct MyType));
+        if (!strcmp(filename, header.name) && !header.del){
+            printf("\nFILENAME: %s\n", header.name);
+            printf("\nDATA:\n%s\n", type.data);
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+
+int delete_file(int fd, char* filename){
+    struct MyType type;
+    struct MyHeader header;
+    if (format_err(fd, unic)){
+        printf("%s\n", "Format error");
+        close(fd);
+        return 1;
+    }
+    while(read(fd, &header, sizeof(struct MyHeader))){
+        if (!strcmp(filename, header.name)){
+            off_t offset = lseek( fd, 0, SEEK_CUR );
+            lseek(fd, offset-sizeof(struct MyHeader), SEEK_SET);
+            header.del = 1;
+            write(fd, &header, sizeof(struct MyHeader));
+            return 0;
+        }
+        read(fd, &type, sizeof(struct MyType));
+    }
+}
+
+void files(int fd){
+    char files[1024] = "";
+    struct MyHeader header;
+    if (format_err(fd, unic)){
+        printf("%s\n", "Format error");
+        close(fd);
+        exit(0);
+    }
+    while(read(fd, &header, sizeof(struct MyHeader))){
+        if (!header.del){
+            strcat(files, header.name);
+            strcat(files, "\n");
+        }
+        lseek(fd, sizeof(struct MyType), SEEK_CUR);
+    }
+    printf("%s\n", files);
 }

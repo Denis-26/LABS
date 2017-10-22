@@ -5,7 +5,7 @@
 #include "help.h"
 #include <fcntl.h>
 
-const int det = 13123;
+
 
 char* read_user_file(char *filename){
     int f = open(filename, O_RDONLY);
@@ -28,32 +28,33 @@ char* read_user_file(char *filename){
 int exist(int fd, char *filename){
     struct MyType record;
     struct MyHeader header;
-    for(int i = 1; ; ++i){
-        ssize_t r_bytes = read(fd, &header, sizeof(struct MyHeader));
-        lseek(fd, sizeof(struct MyHeader)*i, SEEK_SET);
-        r_bytes = read(fd, &record, sizeof(struct MyType));
-        lseek(fd, sizeof(struct MyType)*i, SEEK_SET);
-        if (r_bytes == 0){
-            return 0;
-        }
-        if (!strcmp(filename, record.name)){
+    int det;
+    read(fd, &det, sizeof(int));
+    while(read(fd, &header, sizeof(struct MyHeader))){
+        read(fd, &record, sizeof(struct MyType));
+        if (!strcmp(filename, header.name)){
             return fd;
         }
-
     }
     return 0;
 }
 
 int empty_file(int fd){
-    if (fd != -1) {
-        off_t size = lseek (fd, 0, SEEK_END);
-        if (size == 0) {
-            lseek(fd, 0, SEEK_SET);
-            return 1;
-        }
-    } else {
-        return -1;
+    off_t size = lseek (fd, 0, SEEK_END);
+    if (size == 0) {
+        lseek(fd, 0, SEEK_SET);
+        return 1;
     }
     lseek(fd, 0, SEEK_SET);
+    return 0;
+}
+
+int format_err(int fd, int unic){
+    int det;
+    read(fd, &det, sizeof(int));
+    if (det != unic){
+        close(fd);
+        return 1;
+    }
     return 0;
 }
