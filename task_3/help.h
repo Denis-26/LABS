@@ -17,9 +17,11 @@ struct MyHeader{
 
 char *read_user_file(char*);
 int empty_file(int);
+int copy_file(int fd, char *, char *);
 int exist(int, char*);
 int my_write(int, char*);
 int my_read(int, char *);
 void files(int);
 int delete_file(int, char*);
 int format_err(int, int);
+int find_free_files(int);

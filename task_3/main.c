@@ -22,6 +22,8 @@ int main(int argc, char *argv[])
             delete_file(fd, argv[2]);
         } else if (!strcmp (argv[1], "-l")){
             files(fd);
+        } else if (!strcmp (argv[1], "-c")){
+            copy_file(fd, argv[2], argv[3]);
         }
     }
     close(fd);
@@ -47,17 +49,12 @@ int my_write(int fd, char *filename){
             close(fd);
             return 1;
         }
-        while(read(fd, &temp_header, sizeof(struct MyHeader))){
-            if (temp_header.del){
-                off_t offset = lseek( fd, 0, SEEK_CUR );
-                lseek(fd, offset-sizeof(struct MyHeader), SEEK_SET);
-                break;
-            } else if (!strcmp(temp_header.name, filename)){
-                printf("%s\n", "exist!!!!");
-                return 0;
-            }
-            read(fd, &temp_file_data, sizeof(struct MyType));
+
+        if (exist(fd, filename)){
+            printf("%s\n", "FILE EXIST");
+            return 0;
         }
+        fd = find_free_files(fd);
     } else {
         write(fd, &unic, sizeof(int));
     }
@@ -80,7 +77,11 @@ int my_read(int fd, char *filename){
 
     while(read(fd, &header, sizeof(struct MyHeader))){
         read(fd, &type, sizeof(struct MyType));
-        if (!strcmp(filename, header.name) && !header.del){
+        if (!strcmp(filename, header.name)){
+            if (header.del){
+                printf("%s\n", "File has been deleted");
+                return 0;
+            }
             printf("\nFILENAME: %s\n", header.name);
             printf("\nDATA:\n%s\n", type.data);
             return 0;
@@ -101,6 +102,10 @@ int delete_file(int fd, char* filename){
     }
     while(read(fd, &header, sizeof(struct MyHeader))){
         if (!strcmp(filename, header.name)){
+            if (header.del){
+                printf("%s\n", "File has been already deleted");
+                return 0;
+            }
             off_t offset = lseek( fd, 0, SEEK_CUR );
             lseek(fd, offset-sizeof(struct MyHeader), SEEK_SET);
             header.del = 1;
@@ -127,4 +132,33 @@ void files(int fd){
         lseek(fd, sizeof(struct MyType), SEEK_CUR);
     }
     printf("%s\n", files);
+}
+
+
+int copy_file(int fd, char *source, char *target){
+    struct MyType type;
+    struct MyHeader header;
+    if (format_err(fd, unic)){
+        printf("%s\n", "Format error");
+        close(fd);
+        exit(0);
+    }
+    if (exist(fd, target)){
+        printf("%s\n", "FILE EXIST");
+        return 1;
+    }
+    while(read(fd, &header, sizeof(struct MyHeader))){
+        read(fd, &type, sizeof(struct MyType));
+        if (!strcmp(source, header.name)){
+            if (header.del){
+                printf("%s\n", "File has been deleted");
+                return 0;
+            }
+            strncpy(header.name, target, user_max_filename);
+            fd = find_free_files(fd);
+            write(fd, &header, sizeof(struct MyHeader));
+            write(fd, &type, sizeof(struct MyType));
+            return 0;
+        }
+    }
 }

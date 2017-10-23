@@ -29,13 +29,16 @@ int exist(int fd, char *filename){
     struct MyType record;
     struct MyHeader header;
     int det;
-    read(fd, &det, sizeof(int));
     while(read(fd, &header, sizeof(struct MyHeader))){
         read(fd, &record, sizeof(struct MyType));
         if (!strcmp(filename, header.name)){
-            return fd;
+            off_t position = lseek(fd, 0, SEEK_CUR);
+            lseek(fd, sizeof(int), SEEK_SET);
+            return 1;
         }
     }
+    off_t position = lseek(fd, 0, SEEK_CUR);
+    lseek(fd, sizeof(int), SEEK_SET);
     return 0;
 }
 
@@ -55,6 +58,23 @@ int format_err(int fd, int unic){
     if (det != unic){
         close(fd);
         return 1;
+    }
+    return 0;
+}
+
+int find_free_files(int fd){
+    int det;
+    struct MyType type;
+    struct MyHeader header;
+
+
+    while(read(fd, &header, sizeof(struct MyHeader))){
+        if (header.del){
+            off_t offset = lseek( fd, 0, SEEK_CUR );
+            lseek(fd, offset-sizeof(struct MyHeader), SEEK_SET);
+            return fd;
+        }
+        read(fd, &type, sizeof(struct MyType));
     }
     return 0;
 }
