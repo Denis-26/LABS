@@ -54,7 +54,7 @@ int my_write(int fd, char *filename){
             printf("%s\n", "FILE EXIST");
             return 0;
         }
-        fd = find_free_files(fd);
+        find_free_files(fd);
     } else {
         write(fd, &unic, sizeof(int));
     }
@@ -155,7 +155,7 @@ int copy_file(int fd, char *source, char *target){
                 return 0;
             }
             strncpy(header.name, target, user_max_filename);
-            fd = find_free_files(fd);
+            find_free_files(fd);
             write(fd, &header, sizeof(struct MyHeader));
             write(fd, &type, sizeof(struct MyType));
             return 0;

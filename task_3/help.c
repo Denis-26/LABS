@@ -63,10 +63,8 @@ int format_err(int fd, int unic){
 }
 
 int find_free_files(int fd){
-    int det;
     struct MyType type;
     struct MyHeader header;
-
 
     while(read(fd, &header, sizeof(struct MyHeader))){
         if (header.del){
@@ -76,5 +74,6 @@ int find_free_files(int fd){
         }
         read(fd, &type, sizeof(struct MyType));
     }
+    //lseek(fd, 0, SEEK_END);
     return 0;
 }
