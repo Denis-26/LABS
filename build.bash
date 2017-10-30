@@ -1,3 +1,3 @@
 #!/bin/sh
-cd l1_2
+cd task_3
 make
