@@ -162,5 +162,6 @@ int copy_file(int fd, char *source, char *target){
             return 0;
         }
     }
+    printf("%s\n", "FILE NOT EXIST");
     return 0;
 }
