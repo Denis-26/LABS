@@ -114,6 +114,7 @@ int delete_file(int fd, char* filename){
         }
         read(fd, &type, sizeof(struct MyType));
     }
+    return 1;
 }
 
 void files(int fd){
@@ -161,4 +162,5 @@ int copy_file(int fd, char *source, char *target){
             return 0;
         }
     }
+    return 0;
 }
