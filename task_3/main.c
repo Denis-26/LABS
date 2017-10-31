@@ -7,7 +7,7 @@ const int user_max_filename = 128;
 
 int main(int argc, char *argv[])
 {
-    int fd = open("file.lol", O_RDWR);
+    int fd = open("file.lol", O_RDWR | O_CREAT, 0666);
     if (fd == -1){
         printf("%s\n", "Error in fileopen");
         close(fd);

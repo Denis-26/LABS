@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
-#include <sys/times.h>
+#include <time.h>
 int main()
 {
     pid_t pid;
@@ -30,16 +30,16 @@ int main()
             exit(rv);
         }
         default:{
+            time_t f1 = time(NULL);
             char str_id[12];
             int status = 0;
-            struct tms time;
             sprintf(str_id, "%d", getpid());
             printf("%s", "Я родительский процесс, жду дочерний\nМой ID: ");
             printf("%s", strcat(str_id, "\n"));
 			waitpid(pid, &status, 0);
-            times(&time);
             printf("%s", "Я родительский процесс, дождался\n");
-            printf("Time: %f ms\n", (double)(time.tms_cutime));
+            time_t f2 = time(NULL);
+            printf("Time: %ld\n", f2 - f1);
   }
   }
 }
