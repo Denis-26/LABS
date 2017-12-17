@@ -40,7 +40,7 @@ void *myThreadWrite(void *vargp){
     sem_wait(&semaphore);
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    sprintf(time_str, "ID:%ld %d:%d:%d parent time", pthread_self(), tm.tm_hour, tm.tm_min, tm.tm_sec);
+    sprintf(time_str, "ID:%p %d:%d:%d parent time", pthread_self(), tm.tm_hour, tm.tm_min, tm.tm_sec);
     printf("%s\n", time_str);
     sprintf((char*) (shmem), "%s ", time_str);
     sem_post(&semaphore);
