@@ -12,7 +12,7 @@ const int SIZE = 512;
 int shm_id;
 void* shmem;
 pthread_t tid[10];
-pthread_mutex_t lock;
+struct sembuf sb;
 
 void sig_handler(int sign){
     if(sign == SIGINT){

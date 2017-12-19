@@ -4,16 +4,16 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
-#include <semaphore.h>
 
 const int SIZE = 512;
 int shm_id;
 void* shmem;
+int semid = 0 ;
 pthread_t tid[10];
-sem_t semaphore;
+struct sembuf sb;
 
 void sig_handler(int sign){
     if(sign == SIGINT){
@@ -23,27 +23,34 @@ void sig_handler(int sign){
     }
 }
 
-void *myThreadRead(void *vargp){
+void *myThreadRead(){
   while(1){
-    sleep(rand() % 5);
-    sem_wait(&semaphore);
+    sb.sem_op = -1;
+    if(semop(semid, &sb, 1) == -1)
+      perror("semop error");
     printf("%s %s\n", (char*) shmem, "child");
-    sem_post(&semaphore);
+    sb.sem_op = 1;
+    semop(semid, &sb, 1);
   }
   return NULL;
 }
 
-void *myThreadWrite(void *vargp){
+void *myThreadWrite(){
   char time_str[100] = "";
   while(1){
+    sb.sem_op = -1;
+    semop(semid, &sb, 1);
     sleep(rand() % 5);
-    sem_wait(&semaphore);
+
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    sprintf(time_str, "ID:%ld %d:%d:%d parent time", pthread_self(), tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    sprintf(time_str, "ID:%d:%d:%d parent time", tm.tm_hour, tm.tm_min, tm.tm_sec);
     printf("%s\n", time_str);
+
     sprintf((char*) (shmem), "%s ", time_str);
-    sem_post(&semaphore);
+    sb.sem_op = 1;
+    semop(semid, &sb, 1);
   }
   return NULL;
 }
@@ -55,7 +62,6 @@ int main(){
   key_t shm_key = ftok("/dev/random", 1);
   int exist = 1;
   shm_id = shmget(shm_key, SIZE, 0);
-  sem_init(&semaphore, 0, 1);
 
   if (shm_id == -1){
     exist = 0;
@@ -70,18 +76,17 @@ int main(){
     printf("%s\n", "attach error");
     exit(1);
   }
-
+  sb.sem_num = 0;
+  sb.sem_flg = 0;
   if (exist){
-    int i;
-    for (i = 0; i < 10; i++)
-        pthread_create(&(tid[i]), NULL, myThreadRead, NULL);
+    semid = semget(shm_key, 1, 0660);
+    myThreadRead();
   } else {
-    int i;
-    for (i = 0; i < 10; i++)
-        pthread_create(&(tid[i]), NULL, myThreadWrite, NULL);
+    semid = semget(shm_key, 1, IPC_CREAT | IPC_EXCL | 0666);
+    semctl(semid, 0, SETVAL, 1);
+    myThreadWrite();
   }
 
-  pthread_join(tid[0], NULL);
   shmdt(shmem);
   shmctl(shm_id, IPC_RMID, NULL);
 
