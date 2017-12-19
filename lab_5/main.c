@@ -44,7 +44,6 @@ void *myThreadWrite(){
 
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-
     sprintf(time_str, "ID:%d:%d:%d parent time", tm.tm_hour, tm.tm_min, tm.tm_sec);
     printf("%s\n", time_str);
 
