@@ -35,7 +35,7 @@ void* p_write(void* args){
     while(1){
         pthread_mutex_lock(&lock);
         size_t i = 0;
-        printf("ID: %ld write -> ", pthread_self());
+        printf("ID: %p write -> ", pthread_self());
         for(; i < 1024 * 16; i++){
             ((char*)shmem)[(block_n * BLOCK_SIZE) + i] = '0' + (char)(rand()%9);
         }
@@ -59,7 +59,7 @@ void* p_read(void* args){
         pthread_mutex_lock(&lock);
         while(last_block_written == -1)
             pthread_cond_wait(&cond, &lock);
-        printf("ID: %ld read ->",  pthread_self());
+        printf("ID: %p read ->",  pthread_self());
         for(int i = 0; i < 16; i++)
             printf("%c", *((char*)shmem + last_block_written * BLOCK_SIZE + i));
         printf("\n");
