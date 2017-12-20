@@ -12,7 +12,7 @@ const int SIZE = 512;
 int shm_id;
 void* shmem;
 pthread_t tid[10];
-struct sembuf sb;
+pthread_mutex_t lock;
 
 void sig_handler(int sign){
     if(sign == SIGINT){
@@ -40,7 +40,7 @@ void *myThreadWrite(void *vargp){
     pthread_mutex_lock(&lock);
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    sprintf(time_str, "ID:%p %d:%d:%d parent time", pthread_self(), tm.tm_hour, tm.tm_min, tm.tm_sec);
+    sprintf(time_str, "ID:%ld %d:%d:%d parent time", pthread_self(), tm.tm_hour, tm.tm_min, tm.tm_sec);
     printf("%s\n", time_str);
     sprintf((char*) (shmem), "%s ", time_str);
     pthread_mutex_unlock(&lock);
