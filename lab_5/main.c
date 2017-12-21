@@ -20,31 +20,36 @@ struct sembuf sb;
 void sig_handler(int signo){
     if(signo == SIGINT){
         shmdt(shmem);
-
         if(!create){
             shmctl(shm_id, IPC_RMID, NULL);
             semctl(semid, 0, IPC_RMID);
         }
-
         exit(0);
     }
 }
 
-void *p_read(){
+void *p_read(key_t shm_key){
+  printf("child\n");
+
+  semid = semget(shm_key, 1, 0660);
   while(1){
-      sb.sem_op = -1;
-      if(semop(semid, &sb, 1) == -1){
-        perror("semop");
-      }
-      printf("%s %s\n", (char*) shmem, "child");
-      sb.sem_op = 1;
-      semop(semid, &sb, 1);
-  }
+    sb.sem_op = -1;
+    if(semop(semid, &sb, 1) == -1){
+      perror("semop");
+    }
+    printf("read -> %s", (char*) shmem);
+    sb.sem_op = 1;
+    semop(semid, &sb, 1);
+   }
   return NULL;
 }
 
-void *p_write(){
+void *p_write(key_t shm_key){
   char time_str[100] = "";
+  printf("parent\n");
+  semid = semget(shm_key, 1, IPC_CREAT | IPC_EXCL | 0666);
+  semctl(semid, 0, SETVAL, 1);
+
   while(1){
       sb.sem_op = -1;
       semop(semid, &sb, 1);
@@ -53,10 +58,11 @@ void *p_write(){
 
       time_t t = time(NULL);
       struct tm tm = *localtime(&t);
+      printf("write ->");
       sprintf(time_str, "%d:%d:%d parent time", tm.tm_hour, tm.tm_min, tm.tm_sec);
       printf("%s\n", time_str);
-      sprintf((char*) (shmem), "%s ", time_str);
 
+      sprintf((char*) (shmem), "%s\n", time_str);
       sb.sem_op = 1;
       semop(semid, &sb, 1);
   }
@@ -89,15 +95,10 @@ int main(int argc, char** argv){
     sb.sem_flg = 0;
 
     if(create){
-        printf("child\n");
-        semid = semget(shm_key, 1, 0660);
-        p_read();
+        p_read(shm_key);
     }
     else{
-        printf("parent\n");
-        semid = semget(shm_key, 1, IPC_CREAT | IPC_EXCL | 0666);
-        semctl(semid, 0, SETVAL, 1);
-        p_write();
+        p_write(shm_key);
     }
     return 0;
 }
