@@ -36,10 +36,9 @@ void *p_read(key_t shm_key){
     sb.sem_op = -1;
     if(semop(semid, &sb, 1) == -1){
       perror("semop");
+      return NULL;
     }
     printf("read -> %s", (char*) shmem);
-    sb.sem_op = 1;
-    semop(semid, &sb, 1);
    }
   return NULL;
 }
@@ -51,9 +50,6 @@ void *p_write(key_t shm_key){
   semctl(semid, 0, SETVAL, 1);
 
   while(1){
-      sb.sem_op = -1;
-      semop(semid, &sb, 1);
-
       sleep(1);
 
       time_t t = time(NULL);
@@ -61,8 +57,8 @@ void *p_write(key_t shm_key){
       printf("write ->");
       sprintf(time_str, "%d:%d:%d parent time", tm.tm_hour, tm.tm_min, tm.tm_sec);
       printf("%s\n", time_str);
-
       sprintf((char*) (shmem), "%s\n", time_str);
+
       sb.sem_op = 1;
       semop(semid, &sb, 1);
   }
